@@ -4,11 +4,11 @@ const isDev = process.env.NODE_ENV === 'development'
 const mysql = require('mysql2/promise')
 
 const dbConfig = {
-    host: 'localhost',
-    port: 3306,
-    database: 'data_dev',
+    host: 'cassini.hk',
+    port: 3333,
+    database: 'data_dev_hk',
     user: 'root',
-    password: '9ijn)OKM'
+    password: 'happy_cassini2025'
 };
 
 async function createDbConnection() {
@@ -172,7 +172,7 @@ ipcMain.handle('fetch-scripts', async (event, { page, pageSize, searchParams }) 
 
     // Add pagination
     const offset = (page - 1) * pageSize;
-    query += ' LIMIT ? OFFSET ?';
+    query += ' ORDER BY update_time DESC LIMIT ? OFFSET ?';
     queryParams.push(pageSize, offset);
 
     const [rows] = await dbConnection.query(query, queryParams);
@@ -185,6 +185,7 @@ ipcMain.handle('fetch-scripts', async (event, { page, pageSize, searchParams }) 
       script_type: row.script_type,
       related_tables: row.related_tables,
       owner: row.owner,
+      url: row.url,
       create_time: row.create_time ? row.create_time.toISOString() : null, // Convert Date objects to ISO strings
       update_time: row.update_time ? row.update_time.toISOString() : null
     }));
@@ -417,53 +418,78 @@ ipcMain.handle('delete-table', async (event, id) => {
 // 分页+条件查询 team_api
 ipcMain.handle('fetch-apis', async (event, { page = 1, pageSize = 20, module, top_module, sub_module, developer, related_table }) => {
   try {
-    let query = 'SELECT id, module, top_module, sub_module, suggestion, remark, developer, progress, related_table, create_time, update_time FROM team_api WHERE 1=1';
-    let countQuery = 'SELECT COUNT(*) as total FROM team_api WHERE 1=1';
+    console.log('接收到的fetch-apis参数:', { page, pageSize, module, top_module, sub_module, developer, related_table });
+    let query = 'SELECT a.id, a.module, a.top_module, a.sub_module, a.url, a.content, a.script, a.suggestion, a.remark, a.developer, a.progress, a.create_time, a.update_time, GROUP_CONCAT(t.db_tbl) as related_table FROM team_api a LEFT JOIN team_table_dependencies d ON a.sub_module = d.item LEFT JOIN team_table t ON d.depend_on = t.db_tbl WHERE 1=1 ';
+    let countQuery = 'SELECT COUNT(DISTINCT a.id) as total FROM team_api a LEFT JOIN team_table_dependencies d ON a.sub_module = d.item LEFT JOIN team_table t ON d.depend_on = t.db_tbl WHERE 1=1';
     const queryParams = [];
     const countParams = [];
     if (module) {
-      query += ' AND module LIKE ?';
-      countQuery += ' AND module LIKE ?';
+      query += ' AND a.module LIKE ?';
+      countQuery += ' AND a.module LIKE ?';
       queryParams.push(`%${module}%`);
       countParams.push(`%${module}%`);
     }
     if (top_module) {
-      query += ' AND top_module LIKE ?';
-      countQuery += ' AND top_module LIKE ?';
+      query += ' AND a.top_module LIKE ?';
+      countQuery += ' AND a.top_module LIKE ?';
       queryParams.push(`%${top_module}%`);
       countParams.push(`%${top_module}%`);
     }
     if (sub_module) {
-      query += ' AND sub_module LIKE ?';
-      countQuery += ' AND sub_module LIKE ?';
+      query += ' AND a.sub_module LIKE ?';
+      countQuery += ' AND a.sub_module LIKE ?';
       queryParams.push(`%${sub_module}%`);
       countParams.push(`%${sub_module}%`);
     }
     if (developer) {
-      query += ' AND developer LIKE ?';
-      countQuery += ' AND developer LIKE ?';
+      query += ' AND a.developer LIKE ?';
+      countQuery += ' AND a.developer LIKE ?';
       queryParams.push(`%${developer}%`);
       countParams.push(`%${developer}%`);
     }
-    if (related_table) {
-      query += ' AND related_table LIKE ?';
-      countQuery += ' AND related_table LIKE ?';
+    // 即使related_table为空数组，也应该包含在查询中
+    if (related_table && Array.isArray(related_table)) {
+      if (related_table.length > 0) {
+        // 处理非空数组类型的related_table
+        const tableConditions = related_table.map(() => 't.db_tbl LIKE ?').join(' OR ');
+        query += ' AND (' + tableConditions + ')';
+        countQuery += ' AND (' + tableConditions + ')';
+        related_table.forEach(table => {
+          queryParams.push(`%${table}%`);
+          countParams.push(`%${table}%`);
+        });
+      }
+    } else if (related_table) {
+      // 处理单个值的related_table
+      query += ' AND t.db_tbl LIKE ?';
+      countQuery += ' AND t.db_tbl LIKE ?';
       queryParams.push(`%${related_table}%`);
       countParams.push(`%${related_table}%`);
     }
+    // Group by api id
+    query += ' GROUP BY a.id';
+    console.log('构建的查询语句:', query);
+    console.log('查询参数:', queryParams);
     // Get total count first
     const [countRows] = await dbConnection.query(countQuery, countParams);
     const total = countRows[0].total;
+    console.log('查询到的总记录数:', total);
+    // Add sorting
+    query += ' ORDER BY a.update_time DESC';
     // Add pagination
     const offset = (page - 1) * pageSize;
     query += ' LIMIT ? OFFSET ?';
     queryParams.push(pageSize, offset);
     const [rows] = await dbConnection.query(query, queryParams);
+    console.log('查询到的原始数据行数:', rows.length);
     const serializableRows = rows.map(row => ({
       ...row,
+      // 确保related_table是数组类型
+      related_table: row.related_table ? row.related_table.split(',') : [],
       create_time: row.create_time ? row.create_time.toISOString() : null,
       update_time: row.update_time ? row.update_time.toISOString() : null
     }));
+    console.log('序列化后的数据行数:', serializableRows.length);
     return { success: true, data: serializableRows, total };
   } catch (error) {
     console.error('Failed to fetch apis:', error);
@@ -474,12 +500,29 @@ ipcMain.handle('fetch-apis', async (event, { page = 1, pageSize = 20, module, to
 // 新增 team_api
 ipcMain.handle('create-api', async (event, api) => {
   try {
+    // 开始事务
+    await dbConnection.beginTransaction();
+    // 插入 API 记录
     const [result] = await dbConnection.execute(
-      'INSERT INTO team_api (module, top_module, sub_module, suggestion, remark, developer, progress, related_table, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
-      [api.module, api.top_module, api.sub_module, api.suggestion, api.remark, api.developer, api.progress, api.related_table]
+      'INSERT INTO team_api (module, top_module, sub_module, suggestion, remark, developer, progress, script, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [api.module, api.top_module, api.sub_module, api.suggestion, api.remark, api.developer, api.progress, api.script]
     );
+    // 处理关联表
+    if (api.related_table && api.related_table.length > 0) {
+      // 插入关联关系
+      for (const tableName of api.related_table) {
+        await dbConnection.execute(
+          'INSERT INTO team_table_dependencies (item, depend_on) VALUES (?, ?)',
+          [api.sub_module, tableName]
+        );
+      }
+    }
+    // 提交事务
+    await dbConnection.commit();
     return { success: true, id: result.insertId };
   } catch (error) {
+    // 回滚事务
+    await dbConnection.rollback();
     console.error('Error creating api:', error);
     return { success: false, message: error.message };
   }
@@ -488,12 +531,47 @@ ipcMain.handle('create-api', async (event, api) => {
 // 编辑 team_api
 ipcMain.handle('update-api', async (event, api) => {
   try {
+    console.log('Updating API with id:', api.id);
+    // 开始事务
+    await dbConnection.beginTransaction();
+    // 保存旧的 sub_module
+    console.log('Fetching old sub_module for API id:', api.id);
+    const [oldApi] = await dbConnection.query('SELECT sub_module FROM team_api WHERE id = ?', [api.id]);
+    console.log('Old API data:', oldApi);
+    const oldSubModule = oldApi.length > 0 ? oldApi[0].sub_module : null;
+    // 更新 API 记录
+    console.log('Updating API record...');
     const [result] = await dbConnection.execute(
-      'UPDATE team_api SET module=?, top_module=?, sub_module=?, suggestion=?, remark=?, developer=?, progress=?, related_table=?, update_time=NOW() WHERE id=?',
-      [api.module, api.top_module, api.sub_module, api.suggestion, api.remark, api.developer, api.progress, api.related_table, api.id]
+      'UPDATE team_api SET module=?, top_module=?, sub_module=?, suggestion=?, remark=?, developer=?, progress=?, script=?, update_time=NOW() WHERE id=?',
+      [api.module, api.top_module, api.sub_module, api.suggestion, api.remark, api.developer, api.progress, api.script, api.id]
     );
+    console.log('Update result:', result);
+    // 删除旧的关联关系
+    if (oldSubModule) {
+      console.log('Deleting old dependencies for sub_module:', oldSubModule);
+      await dbConnection.execute('DELETE FROM team_table_dependencies WHERE item = ?', [oldSubModule]);
+      console.log('Old dependencies deleted');
+    }
+    // 处理新的关联表
+    console.log('Related tables:', api.related_table);
+    if (api.related_table && api.related_table.length > 0) {
+      // 插入关联关系
+      console.log('Inserting new dependencies...');
+      for (const tableName of api.related_table) {
+        console.log('Inserting dependency for table:', tableName);
+        await dbConnection.execute(
+          'INSERT INTO team_table_dependencies (item, depend_on) VALUES (?, ?)',
+          [api.sub_module, tableName]
+        );
+      }
+      console.log('New dependencies inserted');
+    }
+    // 提交事务
+    await dbConnection.commit();
     return { success: result.affectedRows > 0 };
   } catch (error) {
+    // 回滚事务
+    await dbConnection.rollback();
     console.error('Error updating api:', error);
     return { success: false, message: error.message };
   }

@@ -1,23 +1,24 @@
 <template>
   <div class="sql-analysis-view">
-    <el-card>
-      <template #header>
+    <div class="card">
+      <div class="card-header">
         <span>SQL血缘分析</span>
-      </template>
-      <div class="codemirror-container">
-        <Codemirror
-          v-model:value="sqlInput"
-          :options="cmOptions"
-          border
-          ref="cmRef"
-          style="width: 100%; height: 60vh; min-height: 300px;"
-        />
       </div>
-      <div class="analyze-button-container">
+      <div class="codemirror-container">
+        <el-input
+          v-model="sqlInput"
+          type="textarea"
+          :rows="30"
+          placeholder="请输入SQL语句"
+          style="min-height: 600px; background-color: #e6f7ff; resize: vertical; margin: 0 auto; display: block;"
+        />
+         <div class="analyze-button-container">
         <el-button type="primary" :icon="Search" @click="analyzeSql" :loading="isLoading">
           分析SQL
         </el-button>
       </div>
+      </div>
+     
       <div v-if="analysisResultObj" class="result-display">
         <h3>分析结果</h3>
         <div class="result-row"><span class="result-label">来源表：</span>{{ analysisResultObj.sources.join(', ') }}</div>
@@ -27,15 +28,12 @@
         <h3>错误信息</h3>
         <pre>{{ errorMessage }}</pre>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import Codemirror from 'codemirror-editor-vue3';
-import 'codemirror/lib/codemirror.css';
-import 'codemirror/mode/sql/sql.js';
 import { Parser } from 'node-sql-parser';
 import { Search } from '@element-plus/icons-vue';
 
@@ -44,13 +42,6 @@ const analysisResult = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 const parser = new Parser();
-const cmRef = ref();
-const cmOptions = {
-  mode: 'text/x-sql',
-  lineNumbers: true,
-  theme: 'default',
-  lineWrapping: true,
-};
 
 const analysisResultObj = computed(() => {
   if (!analysisResult.value) return null;
@@ -175,14 +166,26 @@ function analyzeSql() {
   align-items: flex-start;
   min-height: 80vh;
 }
-.el-card {
+.card {
   width: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+.card-header {
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e4e7ed;
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
 }
 .codemirror-container {
-  margin-bottom: 5px;
-  width: 100%;
+  margin-bottom: 15px;
+  width: 80%;
   text-align: left;
   position: relative;
 }
@@ -191,7 +194,6 @@ function analyzeSql() {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 15px;
-  margin-left: -5px;
   margin-top: 8px;
 }
 .result-display, .error-display {
@@ -228,4 +230,4 @@ pre {
 .error-display pre {
     color: #f56c6c;
 }
-</style> 
+</style>

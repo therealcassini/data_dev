@@ -129,7 +129,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="SQL内容" prop="content" >
-          <SqlCodeMirror v-if="addDialogVisible" v-model="newScriptForm.content" ref="sqlEditorRef" :options="{ lineNumbers: false }" />
+          <el-input v-if="addDialogVisible" v-model="newScriptForm.content" type="textarea" rows="10" placeholder="请输入SQL内容" ref="sqlEditorRef" :spellcheck="false"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -171,7 +171,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="SQL内容" prop="content" >
-          <SqlCodeMirror v-model="editScriptForm.content" style="text-align: left;" :options="{ lineNumbers: false }" />
+          <el-input v-model="editScriptForm.content" type="textarea" rows="10" placeholder="请输入SQL内容" style="text-align: left;" :spellcheck="false"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -191,11 +191,14 @@
       close-on-click-modal
       :show-close="false"
     >
-      <SqlCodeMirror
+      <el-input
         v-if="sqlPreviewDialogVisible"
         v-model="sqlPreviewContent"
+        type="textarea"
+        rows="10"
         ref="sqlPreviewEditorRef"
-        :options="{ readOnly: true, lineNumbers: false }"
+        readonly
+        :spellcheck="false"
       />
     </el-dialog>
   </div>
@@ -206,9 +209,8 @@ import { ref, reactive, onMounted, toRaw, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, Delete, Edit } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
-import 'codemirror/lib/codemirror.css'
-import 'codemirror/mode/sql/sql.js'
-import SqlCodeMirror from '../components/SqlCodeMirror.vue'
+
+
 
 const scripts = ref([])
 const loading = ref(false)
@@ -514,16 +516,10 @@ const handleCurrentChange = (val) => {
   fetchScripts()
 }
 
-const cmOptions = {
-  mode: 'text/x-sql',
-  lineNumbers: true,
-  theme: 'default',
-}
+
 
 const onAddDialogOpened = () => {
-  if (sqlEditorRef.value && sqlEditorRef.value.refresh) {
-    sqlEditorRef.value.refresh();
-  }
+
 };
 
 const sqlPreviewDialogVisible = ref(false)
@@ -548,9 +544,7 @@ async function showSqlPreviewDialog(row) {
   sqlPreviewTitle.value = `【${row.name}】SQL内容`;
   sqlPreviewDialogVisible.value = true;
   nextTick(() => {
-    if (sqlPreviewEditorRef.value && sqlPreviewEditorRef.value.refresh) {
-      sqlPreviewEditorRef.value.refresh();
-    }
+
   });
 }
 
@@ -598,4 +592,4 @@ watch(
 :deep(.el-dialog__body) {
   padding: 24px 32px 16px 32px !important;
 }
-</style> 
+</style>

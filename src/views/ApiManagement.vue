@@ -35,7 +35,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="关联表">
-              <el-select v-model="searchForm.related_table" placeholder="请选择关联表" clearable filterable style="width: 100%;">
+              <el-select v-model="searchForm.related_table" placeholder="请选择关联表" clearable filterable multiple style="width: 100%;">
                 <el-option v-for="item in relatedTables" :key="item" :label="item" :value="item"></el-option>
               </el-select>
             </el-form-item>
@@ -50,14 +50,71 @@
       </el-form>
       <el-table :data="apis" v-loading="loading" style="width: 100%" border>
         <el-table-column prop="id" label="ID" width="60"></el-table-column>
-        <el-table-column prop="module" label="模块"></el-table-column>
-        <el-table-column prop="top_module" label="一级模块"></el-table-column>
-        <el-table-column prop="sub_module" label="子模块"></el-table-column>
-        <el-table-column prop="suggestion" label="处理意见" show-overflow-tooltip></el-table-column>
-        <el-table-column prop="remark" label="备注" show-overflow-tooltip></el-table-column>
+        <el-table-column prop="module" label="模块">
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.module)">
+              {{ scope.row.module }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="top_module" label="一级模块">
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.top_module)">
+              {{ scope.row.top_module }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="sub_module" label="子模块">
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.sub_module)">
+              {{ scope.row.sub_module }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="url" label="URL">
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.url, true)">
+              {{ scope.row.url }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="content" label="内容" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.content)">
+              {{ scope.row.content }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="script" label="脚本" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.script)">
+              {{ scope.row.script }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="suggestion" label="处理意见" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.suggestion)">
+              {{ scope.row.suggestion }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.remark)">
+              {{ scope.row.remark }}
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="developer" label="负责人" width="100"></el-table-column>
         <el-table-column prop="progress" label="进度" width="100"></el-table-column>
-        <el-table-column prop="related_table" label="关联表" show-overflow-tooltip></el-table-column>
+        <el-table-column prop="related_table" label="关联表" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.related_table)">
+              {{ scope.row.related_table }}
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column prop="update_time" label="更新时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -92,6 +149,15 @@
         <el-form-item label="子模块" prop="sub_module">
           <el-input v-model="newApiForm.sub_module" placeholder="请输入子模块"></el-input>
         </el-form-item>
+        <el-form-item label="URL" prop="url">
+          <el-input v-model="newApiForm.url" placeholder="请输入URL"></el-input>
+        </el-form-item>
+        <el-form-item label="内容" prop="content">
+          <el-input v-model="newApiForm.content" type="textarea" placeholder="请输入内容"></el-input>
+        </el-form-item>
+        <el-form-item label="脚本" prop="script">
+          <el-input v-model="newApiForm.script" type="textarea" placeholder="请输入脚本" :rows="10" />
+        </el-form-item>
         <el-form-item label="处理意见" prop="suggestion">
           <el-input v-model="newApiForm.suggestion" type="textarea" placeholder="请输入处理意见"></el-input>
         </el-form-item>
@@ -107,7 +173,7 @@
           <el-input v-model="newApiForm.progress" placeholder="请输入进度"></el-input>
         </el-form-item>
         <el-form-item label="关联表" prop="related_table">
-          <el-select v-model="newApiForm.related_table" placeholder="请选择关联表" filterable style="width: 100%;">
+          <el-select v-model="newApiForm.related_table" placeholder="请选择关联表" filterable multiple style="width: 100%;">
             <el-option v-for="item in relatedTables" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
@@ -132,6 +198,15 @@
         <el-form-item label="子模块" prop="sub_module">
           <el-input v-model="editApiForm.sub_module" placeholder="请输入子模块"></el-input>
         </el-form-item>
+        <el-form-item label="URL" prop="url">
+          <el-input v-model="editApiForm.url" placeholder="请输入URL"></el-input>
+        </el-form-item>
+        <el-form-item label="内容" prop="content">
+          <el-input v-model="editApiForm.content" type="textarea" placeholder="请输入内容"></el-input>
+        </el-form-item>
+        <el-form-item label="脚本" prop="script">
+          <el-input v-model="editApiForm.script" type="textarea" placeholder="请输入脚本" :rows="10" />
+        </el-form-item>
         <el-form-item label="处理意见" prop="suggestion">
           <el-input v-model="editApiForm.suggestion" type="textarea" placeholder="请输入处理意见"></el-input>
         </el-form-item>
@@ -147,7 +222,7 @@
           <el-input v-model="editApiForm.progress" placeholder="请输入进度"></el-input>
         </el-form-item>
         <el-form-item label="关联表" prop="related_table">
-          <el-select v-model="editApiForm.related_table" placeholder="请选择关联表" filterable style="width: 100%;">
+          <el-select v-model="editApiForm.related_table" placeholder="请选择关联表" filterable multiple style="width: 100%;">
             <el-option v-for="item in relatedTables" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
@@ -163,9 +238,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, toRaw } from 'vue'
+import { ref, reactive, onMounted, toRaw, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Delete } from '@element-plus/icons-vue'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/mode/sql/sql.js'
+// 移除了 SqlCodeMirror 的导入，因为不再使用
 
 const apis = ref([])
 const loading = ref(false)
@@ -176,7 +254,7 @@ const searchForm = reactive({
   top_module: '',
   sub_module: '',
   developer: '',
-  related_table: ''
+  related_table: []
 })
 const pagination = reactive({
   currentPage: 1,
@@ -188,11 +266,14 @@ const newApiForm = reactive({
   module: '',
   top_module: '',
   sub_module: '',
+  url: '',
+  content: '',
+  script: '',
   suggestion: '',
   remark: '',
   developer: '',
   progress: '未开始',
-  related_table: ''
+  related_table: []
 })
 const newApiFormRef = ref(null)
 const editDialogVisible = ref(false)
@@ -201,11 +282,14 @@ const editApiForm = reactive({
   module: '',
   top_module: '',
   sub_module: '',
+  url: '',
+  content: '',
+  script: '',
   suggestion: '',
   remark: '',
   developer: '',
   progress: '未开始',
-  related_table: ''
+  related_table: []
 })
 const editApiFormRef = ref(null)
 
@@ -219,12 +303,19 @@ const fetchApis = async () => {
   }
   loading.value = true
   try {
+    // 确保related_table是普通数组而不是Proxy对象
+    const searchFormWithNormalizedRelatedTable = {
+      ...searchForm,
+      related_table: Array.from(searchForm.related_table || [])
+    }
     const paramsToSend = {
       page: pagination.currentPage,
       pageSize: pagination.pageSize,
-      ...searchForm
+      ...searchFormWithNormalizedRelatedTable
     }
+    console.log('发送到主进程的参数:', paramsToSend);
     const response = await ipcRenderer.invoke('fetch-apis', paramsToSend)
+    console.log('主进程返回的响应:', response);
     if (response.success) {
       apis.value = response.data
       pagination.total = response.total
@@ -232,6 +323,7 @@ const fetchApis = async () => {
       ElMessage.error('获取API信息失败: ' + response.message)
     }
   } catch (error) {
+    console.error('获取API信息时发生错误:', error);
     ElMessage.error('获取API信息时发生错误: ' + error.message)
   } finally {
     loading.value = false
@@ -282,7 +374,7 @@ const resetSearch = () => {
   searchForm.top_module = ''
   searchForm.sub_module = ''
   searchForm.developer = ''
-  searchForm.related_table = ''
+  searchForm.related_table = []
   pagination.currentPage = 1
   fetchApis()
 }
@@ -318,11 +410,14 @@ const resetNewApiForm = () => {
   newApiForm.module = ''
   newApiForm.top_module = ''
   newApiForm.sub_module = ''
+  newApiForm.url = ''
+  newApiForm.content = ''
+  newApiForm.script = ''
   newApiForm.suggestion = ''
   newApiForm.remark = ''
   newApiForm.developer = ''
   newApiForm.progress = '未开始'
-  newApiForm.related_table = ''
+  newApiForm.related_table = []
 }
 const handleAddApi = async () => {
   if (!ipcRenderer) return
@@ -363,6 +458,26 @@ const handleEditApi = async () => {
   }
 }
 const handleEditDialogClose = (done) => { done() }
+
+// 复制到剪贴板功能
+const copyToClipboard = (text, isUrl = false) => {
+  if (!text) {
+    ElMessage.warning('没有可复制的内容');
+    return;
+  }
+  
+  // 如果是URL并且需要转换驼峰到下划线
+  let textToCopy = text;
+  if (isUrl) {
+    textToCopy = text.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+  
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    ElMessage.success('复制成功');
+  }).catch(err => {
+    ElMessage.error('复制失败: ' + err.message);
+  });
+}
 
 const handleDeleteApi = (id) => {
   if (!ipcRenderer) return
@@ -417,4 +532,14 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
-</style> 
+
+.copyable {
+  cursor: pointer;
+}
+
+.copyable:hover {
+  background-color: #f0f0f0;
+}
+
+
+</style>
