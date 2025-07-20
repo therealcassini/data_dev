@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === 'development'
 const mysql = require('mysql2/promise')
 
 const dbConfig = {
-    host: 'cassini.hk',
+    host: '103.56.114.40',
     port: 3333,
     database: 'data_dev_hk',
     user: 'root',
@@ -282,31 +282,45 @@ ipcMain.handle('fetch-script-detail', async (event, scriptId) => {
 });
 
 // Fetch tables with pagination and search
+// 获取所有可关联的表
+ipcMain.handle('fetch-table-related-tables', async (event) => {
+  try {
+    const [rows] = await dbConnection.query('SELECT db_tbl FROM team_table');
+    return { success: true, data: rows.map(row => row.db_tbl) };
+  } catch (error) {
+    console.error('Failed to fetch related tables:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// 修改获取表的查询，添加关联表信息
 ipcMain.handle('fetch-tables', async (event, { page = 1, pageSize = 20, tbl, tbl_desc, owner }) => {
   try {
-    let query = 'SELECT id, db_tbl, db, tbl, create_sql_name, create_sql, insert_sql_name, insert_sql, tbl_desc, owner, create_time, update_time FROM team_table WHERE 1=1';
-    let countQuery = 'SELECT COUNT(*) as total FROM team_table WHERE 1=1';
+    let query = 'SELECT t.id, t.db_tbl, t.db, t.tbl, t.create_sql_name, t.create_sql, t.insert_sql_name, t.insert_sql, t.tbl_desc, t.owner, t.create_time, t.update_time, GROUP_CONCAT(d.depend_on) as related_table FROM team_table t LEFT JOIN team_table_dependencies d ON t.db_tbl = d.item WHERE 1=1';
+    let countQuery = 'SELECT COUNT(DISTINCT t.id) as total FROM team_table t LEFT JOIN team_table_dependencies d ON t.db_tbl = d.item WHERE 1=1';
     const queryParams = [];
     const countParams = [];
 
     if (tbl) {
-      query += ' AND tbl LIKE ?';
-      countQuery += ' AND tbl LIKE ?';
+      query += ' AND t.tbl LIKE ?';
+      countQuery += ' AND t.tbl LIKE ?';
       queryParams.push(`%${tbl}%`);
       countParams.push(`%${tbl}%`);
     }
     if (tbl_desc) {
-      query += ' AND tbl_desc LIKE ?';
-      countQuery += ' AND tbl_desc LIKE ?';
+      query += ' AND t.tbl_desc LIKE ?';
+      countQuery += ' AND t.tbl_desc LIKE ?';
       queryParams.push(`%${tbl_desc}%`);
       countParams.push(`%${tbl_desc}%`);
     }
     if (owner) {
-      query += ' AND owner LIKE ?';
-      countQuery += ' AND owner LIKE ?';
+      query += ' AND t.owner LIKE ?';
+      countQuery += ' AND t.owner LIKE ?';
       queryParams.push(`%${owner}%`);
       countParams.push(`%${owner}%`);
     }
+
+    query += ' GROUP BY t.id';
 
     // Get total count first
     const [countRows] = await dbConnection.query(countQuery, countParams);
@@ -330,6 +344,7 @@ ipcMain.handle('fetch-tables', async (event, { page = 1, pageSize = 20, tbl, tbl
       insert_sql: row.insert_sql,
       tbl_desc: row.tbl_desc,
       owner: row.owner,
+      related_table: row.related_table ? row.related_table.split(',') : [],
       create_time: row.create_time ? row.create_time.toISOString() : null,
       update_time: row.update_time ? row.update_time.toISOString() : null
     }));
@@ -341,75 +356,89 @@ ipcMain.handle('fetch-tables', async (event, { page = 1, pageSize = 20, tbl, tbl
   }
 });
 
-// 获取所有脚本名称，支持模糊搜索
-ipcMain.handle('fetch-sql-names', async (event, query) => {
-  try {
-    let sql = 'SELECT name FROM team_sql';
-    const params = [];
-    if (query) {
-      sql += ' WHERE name LIKE ?';
-      params.push(`%${query}%`);
-    }
-    const [rows] = await dbConnection.query(sql, params);
-    return { success: true, data: rows.map(row => row.name) };
-  } catch (error) {
-    console.error('Failed to fetch sql names:', error);
-    return { success: false, message: error.message };
-  }
-});
-
-// 通过脚本名称获取 content
-ipcMain.handle('fetch-sql-content-by-name', async (event, name) => {
-  try {
-    const [rows] = await dbConnection.query('SELECT content FROM team_sql WHERE name = ?', [name]);
-    if (rows.length > 0) {
-      return { success: true, content: rows[0].content };
-    } else {
-      return { success: false, message: 'Not found' };
-    }
-  } catch (error) {
-    console.error('Failed to fetch sql content by name:', error);
-    return { success: false, message: error.message };
-  }
-});
-
-// 新增表
+// 修改创建表的处理，添加依赖关系处理
 ipcMain.handle('create-table', async (event, table) => {
   try {
+    await dbConnection.beginTransaction();
+
     const [result] = await dbConnection.execute(
       'INSERT INTO team_table (db_tbl, db, tbl, create_sql_name, insert_sql_name, tbl_desc, owner, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [table.db_tbl, table.db, table.tbl, table.create_sql_name, table.insert_sql_name, table.tbl_desc, table.owner]
     );
+
+    // 处理关联表
+    if (table.related_table && table.related_table.length > 0) {
+      for (const relatedTable of table.related_table) {
+        await dbConnection.execute(
+          'INSERT INTO team_table_dependencies (item, depend_on) VALUES (?, ?)',
+          [table.db_tbl, relatedTable]
+        );
+      }
+    }
+
+    await dbConnection.commit();
     return { success: true, id: result.insertId };
   } catch (error) {
+    await dbConnection.rollback();
     console.error('Error creating table:', error);
     return { success: false, message: error.message };
   }
 });
 
-// 编辑表
+// 修改更新表的处理，添加依赖关系处理
 ipcMain.handle('update-table', async (event, table) => {
   try {
+    await dbConnection.beginTransaction();
+
     const [result] = await dbConnection.execute(
       'UPDATE team_table SET db_tbl=?, db=?, tbl=?, create_sql_name=?, create_sql=?, insert_sql_name=?, insert_sql=?, tbl_desc=?, owner=?, update_time=NOW() WHERE id=?',
       [table.db_tbl, table.db, table.tbl, table.create_sql_name, table.create_sql, table.insert_sql_name, table.insert_sql, table.tbl_desc, table.owner, table.id]
     );
+
+    // 删除旧的依赖关系
+    await dbConnection.execute('DELETE FROM team_table_dependencies WHERE item = ?', [table.db_tbl]);
+
+    // 添加新的依赖关系
+    if (table.related_table && table.related_table.length > 0) {
+      for (const relatedTable of table.related_table) {
+        await dbConnection.execute(
+          'INSERT INTO team_table_dependencies (item, depend_on) VALUES (?, ?)',
+          [table.db_tbl, relatedTable]
+        );
+      }
+    }
+
+    await dbConnection.commit();
     return { success: result.affectedRows > 0 };
   } catch (error) {
+    await dbConnection.rollback();
     console.error('Error updating table:', error);
     return { success: false, message: error.message };
   }
 });
 
-// 删除表
+// 修改删除表的处理，添加依赖关系处理
 ipcMain.handle('delete-table', async (event, id) => {
   try {
-    const [result] = await dbConnection.execute(
-      'DELETE FROM team_table WHERE id = ?',
-      [id]
-    );
+    await dbConnection.beginTransaction();
+
+    // 获取表的db_tbl
+    const [rows] = await dbConnection.query('SELECT db_tbl FROM team_table WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      throw new Error('Table not found');
+    }
+    const db_tbl = rows[0].db_tbl;
+
+    // 删除依赖关系
+    await dbConnection.execute('DELETE FROM team_table_dependencies WHERE item = ? OR depend_on = ?', [db_tbl, db_tbl]);
+
+    // 删除表记录
+    const [result] = await dbConnection.execute('DELETE FROM team_table WHERE id = ?', [id]);
+
+    await dbConnection.commit();
     return { success: result.affectedRows > 0 };
   } catch (error) {
+    await dbConnection.rollback();
     console.error('Error deleting table:', error);
     return { success: false, message: error.message };
   }
@@ -613,22 +642,35 @@ ipcMain.handle('fetch-api-related-tables', async () => {
   }
 });
 
-// Query global stats
-ipcMain.handle('query-global-stats', async (event) => {
+// 获取所有脚本名称，支持模糊搜索
+ipcMain.handle('fetch-sql-names', async (event, query) => {
   try {
-    const sql = `select '人员总数' as label, count(1) as value from team_user
-      union
-      select '表总量', count(1) from team_table
-      union
-      select '脚本总量', count(1) from team_sql
-      union
-      select '接口总量', count(1) from team_api`;
-    const [rows] = await dbConnection.query(sql);
-    // 返回格式 [['人员总数', 123], ...]
-    return rows.map(row => [row.label, row.value]);
+    let sql = 'SELECT name FROM team_sql';
+    const params = [];
+    if (query) {
+      sql += ' WHERE name LIKE ?';
+      params.push(`%${query}%`);
+    }
+    const [rows] = await dbConnection.query(sql, params);
+    return { success: true, data: rows.map(row => row.name) };
   } catch (error) {
-    console.error('Failed to query global stats:', error);
-    return [];
+    console.error('Failed to fetch sql names:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// 通过脚本名称获取 content
+ipcMain.handle('fetch-sql-content-by-name', async (event, name) => {
+  try {
+    const [rows] = await dbConnection.query('SELECT content FROM team_sql WHERE name = ?', [name]);
+    if (rows.length > 0) {
+      return { success: true, content: rows[0].content };
+    } else {
+      return { success: false, message: 'Not found' };
+    }
+  } catch (error) {
+    console.error('Failed to fetch sql content by name:', error);
+    return { success: false, message: error.message };
   }
 });
 

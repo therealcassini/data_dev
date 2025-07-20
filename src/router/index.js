@@ -8,6 +8,7 @@ import TestEditor from '../views/TestEditor.vue'
 import Index from '../views/Index.vue'
 import SqlAnalysis from '../views/SqlAnalysis.vue'
 import TableMetadata from '../views/TableMetadata.vue'
+import DependencyAnalysis from '../views/DependencyAnalysis.vue'
 
 const routes = [
   {
@@ -55,6 +56,11 @@ const routes = [
         component: TestEditor
       },
       {
+        path: 'dependency-analysis',
+        name: 'dependency-analysis',
+        component: DependencyAnalysis
+      },
+      {
         path: 'table-metadata',
         name: 'table-metadata',
         component: TableMetadata
@@ -68,4 +74,4 @@ const router = createRouter({
   routes
 })
 
-export default router 
+export default router

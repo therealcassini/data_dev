@@ -1,0 +1,11 @@
+  team_table 表中添加字段
+  `related_table` varchar(1000) DEFAULT NULL COMMENT '关联的表(db.tbl格式)',
+
+
+
+  参考中对于关联表的处理，修改中对于关联表的处理
+1.参考中的对应表结构
+2.team_sql中的name 作为team_table_dependencies 中的item
+2.1 team_sql 中的name需要 做一下处理去掉 create_前缀
+3.从下拉中选择的 table 作为 team_table_dependencies 的 字段depend_on 字段
+4.选择依赖的时候也是可以选择多张表，team_sql中的  related_tables 只是作为存储时候

@@ -31,11 +31,14 @@
           <el-tab-pane label="SQL分析" name="sql-analysis">
             <router-view v-if="activeTab === 'sql-analysis'" />
           </el-tab-pane>
-          <el-tab-pane label="表元数据" name="table-metadata">
-            <router-view v-if="activeTab === 'table-metadata'" />
-          </el-tab-pane>
           <el-tab-pane label="测试Editor" name="test-editor">
             <router-view v-if="activeTab === 'test-editor'" />
+          </el-tab-pane>
+          <el-tab-pane label="依赖分析" name="dependency-analysis">
+            <router-view v-if="activeTab === 'dependency-analysis'" />
+          </el-tab-pane>
+          <el-tab-pane label="表元数据" name="table-metadata">
+            <router-view v-if="activeTab === 'table-metadata'" />
           </el-tab-pane>
         </el-tabs>
       </el-main>
@@ -59,7 +62,7 @@ export default {
   created() {
     // 根据当前路由设置活动标签
     const path = this.$route.path.split('/').pop()
-    if (path && ['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor'].includes(path)) {
+    if (path && ['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor', 'dependency-analysis'].includes(path)) {
       this.activeTab = path
     } else {
       this.activeTab = 'index'
@@ -68,7 +71,7 @@ export default {
   watch: {
     '$route'(to) {
       const path = to.path.split('/').pop()
-      if (['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor'].includes(path)) {
+      if (['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor', 'dependency-analysis'].includes(path)) {
         this.activeTab = path
       }
     }
@@ -130,4 +133,4 @@ export default {
   color: white;
   border-color: #409EFF;
 }
-</style> 
+</style>

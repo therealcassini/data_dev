@@ -160,6 +160,7 @@ CREATE TABLE `team_table` (
   `tbl_desc` varchar(4096) DEFAULT NULL COMMENT '表描述',
   `insert_sql_name` varchar(256) DEFAULT NULL COMMENT '关联team_sql_name',
   `owner` varchar(100) DEFAULT NULL COMMENT '负责人',
+  `related_table` varchar(1000) DEFAULT NULL COMMENT '关联的表(db.tbl格式)',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

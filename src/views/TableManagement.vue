@@ -45,6 +45,13 @@
         <el-table-column prop="insert_sql_name" label="插入SQL名称"></el-table-column>
         <el-table-column prop="tbl_desc" label="表描述" show-overflow-tooltip></el-table-column>
         <el-table-column prop="owner" label="负责人" width="100"></el-table-column>
+        <el-table-column prop="related_table" label="关联表" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="copyable" @click="copyToClipboard(scope.row.related_table.join(','))">
+              {{ scope.row.related_table.join(',') }}
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column prop="update_time" label="更新时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -117,6 +124,11 @@
             <el-option v-for="item in owners" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="关联表" prop="related_table">
+          <el-select v-model="newTableForm.related_table" placeholder="请选择关联表" filterable multiple style="width: 100%;">
+            <el-option v-for="item in relatedTables" :key="item" :label="item" :value="item"></el-option>
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -164,6 +176,11 @@
         <el-form-item label="负责人" prop="owner">
           <el-select v-model="editTableForm.owner" placeholder="请选择负责人" filterable style="width: 100%;">
             <el-option v-for="item in owners" :key="item" :label="item" :value="item"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关联表" prop="related_table">
+          <el-select v-model="editTableForm.related_table" placeholder="请选择关联表" filterable multiple style="width: 100%;">
+            <el-option v-for="item in relatedTables" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
       </el-form>
@@ -220,7 +237,8 @@ const editTableForm = reactive({
   insert_sql_name: '',
   insert_sql: '',
   tbl_desc: '',
-  owner: ''
+  owner: '',
+  related_table: []
 })
 const editTableFormRef = ref(null)
 
@@ -452,10 +470,37 @@ const handleDeleteTable = (id) => {
     })
 }
 
+const fetchRelatedTables = async () => {
+  if (!ipcRenderer) {
+    ElMessage.error('IPC Renderer not available.');
+    return;
+  }
+  try {
+    const response = await ipcRenderer.invoke('fetch-table-related-tables')
+    if (response.success) {
+      relatedTables.value = response.data
+    } else {
+      ElMessage.error('获取关联表失败: ' + response.message)
+    }
+  } catch (error) {
+    ElMessage.error('获取关联表时发生错误: ' + error.message)
+  }
+}
 onMounted(() => {
   fetchOwners()
+  fetchRelatedTables()
   fetchTables()
 })
+const relatedTables = ref([])
+
+const copyToClipboard = (text) => {
+  if (!text) return
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success('复制成功')
+  }).catch(() => {
+    ElMessage.error('复制失败')
+  })
+}
 </script>
 
 <style scoped>
@@ -479,4 +524,12 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
+.copyable {
+  cursor: pointer;
+}
+.copyable:hover {
+  color: #409EFF;
+}
 </style>
+
+
