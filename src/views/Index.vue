@@ -26,6 +26,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 
+console.log('Index.vue: 组件已加载');
+
 const router = useRouter()
 
 const stats = ref([
@@ -63,20 +65,40 @@ function animateValue(item, start, end, duration = 300) {
 }
 
 const fetchStats = async () => {
-  if (!ipcRenderer) return
+  console.log('Index.vue: 开始调用fetchStats函数');
+  if (!ipcRenderer) {
+    console.log('Index.vue: ipcRenderer不可用');
+    return
+  }
   try {
+    console.log('Index.vue: 开始调用query-global-stats');
     const result = await ipcRenderer.invoke('query-global-stats')
-    if (Array.isArray(result)) {
-      result.forEach(([label, value], idx) => {
-        const item = stats.value[idx]
-        if (item) {
-          animateValue(item, item.displayValue, Number(value), 300)
-          item.value = Number(value)
-        }
-      })
+    console.log('Index.vue: query-global-stats调用结果:', result);
+    
+    // 检查result是否是预期的格式
+    if (result && result.success && result.data) {
+      console.log('Index.vue: 结果格式正确，包含success和data字段');
+      if (Array.isArray(result.data)) {
+        console.log('Index.vue: data是数组，长度为:', result.data.length);
+        result.data.forEach(([label, value], idx) => {
+          console.log(`Index.vue: 处理数据项 ${idx}: 标签=${label}, 值=${value}`);
+          const item = stats.value[idx]
+          if (item) {
+            animateValue(item, item.displayValue, Number(value), 300)
+            item.value = Number(value)
+            console.log(`Index.vue: 更新统计项 ${label} 为 ${value}`);
+          } else {
+            console.log(`Index.vue: 没有找到对应的统计项，索引=${idx}`);
+          }
+        })
+      } else {
+        console.log('Index.vue: data不是数组');
+      }
+    } else {
+      console.log('Index.vue: 结果格式不正确，缺少success或data字段');
     }
   } catch (e) {
-    // 可根据需要处理错误
+    console.error('Index.vue: 获取统计数据失败:', e);
   }
 }
 
@@ -219,6 +241,7 @@ const fetchScatterData = async () => {
 }
 
 onMounted(() => {
+  console.log('Index.vue: 组件已挂载，开始调用数据获取函数');
   fetchStats()
   fetchPieData()
   fetchScatterData()
@@ -277,4 +300,4 @@ onMounted(() => {
 .stat-card.clickable:hover {
   box-shadow: 0 0 12px #409eff44;
 }
-</style> 
+</style>

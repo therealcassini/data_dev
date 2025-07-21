@@ -59,7 +59,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "bee.png"
+      "icon": "d:/工作/data_dev/bee.png"
     },
     "nsis": {
       "oneClick": false,

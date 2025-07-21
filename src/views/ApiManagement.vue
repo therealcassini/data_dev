@@ -156,7 +156,7 @@
           <el-input v-model="newApiForm.content" type="textarea" placeholder="请输入内容"></el-input>
         </el-form-item>
         <el-form-item label="脚本" prop="script">
-          <el-input v-model="newApiForm.script" type="textarea" placeholder="请输入脚本" :rows="10" />
+          <el-input v-model="newApiForm.script" type="textarea" placeholder="请输入脚本" :rows="15" />
         </el-form-item>
         <el-form-item label="处理意见" prop="suggestion">
           <el-input v-model="newApiForm.suggestion" type="textarea" placeholder="请输入处理意见"></el-input>
@@ -205,7 +205,7 @@
           <el-input v-model="editApiForm.content" type="textarea" placeholder="请输入内容"></el-input>
         </el-form-item>
         <el-form-item label="脚本" prop="script">
-          <el-input v-model="editApiForm.script" type="textarea" placeholder="请输入脚本" :rows="10" />
+          <el-input v-model="editApiForm.script" type="textarea" placeholder="请输入脚本" :rows="15" />
         </el-form-item>
         <el-form-item label="处理意见" prop="suggestion">
           <el-input v-model="editApiForm.suggestion" type="textarea" placeholder="请输入处理意见"></el-input>
@@ -442,10 +442,23 @@ const showEditDialog = (row) => {
   editDialogVisible.value = true
 }
 const handleEditApi = async () => {
-  if (!ipcRenderer) return
+  if (!ipcRenderer) {
+    ElMessage.error('IPC Renderer not available.');
+    return;
+  }
   try {
+    // 确保editApiForm包含id字段
+    if (!editApiForm.id) {
+      ElMessage.error('API ID缺失，无法更新！');
+      return;
+    }
+    
     const paramsToSend = toRaw(editApiForm)
+    console.log('发送到主进程的更新参数:', paramsToSend);
+    
     const response = await ipcRenderer.invoke('update-api', paramsToSend)
+    console.log('主进程返回的更新响应:', response);
+    
     if (response.success) {
       ElMessage.success('编辑API成功！')
       editDialogVisible.value = false
@@ -454,6 +467,7 @@ const handleEditApi = async () => {
       ElMessage.error('编辑API失败: ' + response.message)
     }
   } catch (e) {
+    console.error('编辑API时发生错误:', e);
     ElMessage.error('编辑API时发生错误: ' + e.message)
   }
 }
