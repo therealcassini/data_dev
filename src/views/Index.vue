@@ -288,7 +288,7 @@ onMounted(() => {
   box-shadow: 0 2px 8px #eee;
   padding: 20px 0 10px 0;
   min-height: 700px;
-  height: 700px;
+  height: 1000px;
   display: flex;
   justify-content: center;
   align-items: center;

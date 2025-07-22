@@ -25,9 +25,6 @@
           <el-tab-pane label="接口管理" name="apis">
             <router-view v-if="activeTab === 'apis'" />
           </el-tab-pane>
-          <el-tab-pane label="用户管理" name="users">
-            <router-view v-if="activeTab === 'users'" />
-          </el-tab-pane>
           <el-tab-pane label="SQL分析" name="sql-analysis">
             <router-view v-if="activeTab === 'sql-analysis'" />
           </el-tab-pane>
@@ -39,6 +36,9 @@
           </el-tab-pane>
           <el-tab-pane label="表元数据" name="table-metadata">
             <router-view v-if="activeTab === 'table-metadata'" />
+          </el-tab-pane>
+          <el-tab-pane label="用户管理" name="users">
+            <router-view v-if="activeTab === 'users'" />
           </el-tab-pane>
         </el-tabs>
       </el-main>

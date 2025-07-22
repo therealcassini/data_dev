@@ -56,7 +56,7 @@
       </el-form>
 
       <el-table :data="scripts" v-loading="loading" style="width: 100%" border>
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+        <!-- <el-table-column prop="id" label="ID" width="80"></el-table-column> -->
         <el-table-column prop="name" label="脚本名称">
           <template #default="scope">
             <el-link type="primary" @click="showSqlPreviewDialog(scope.row)">{{ scope.row.name }}</el-link>
@@ -66,7 +66,7 @@
         <el-table-column prop="script_type" label="脚本类型" width="100"></el-table-column>
         <el-table-column prop="related_tables" label="关联的表" show-overflow-tooltip></el-table-column>
         <el-table-column prop="owner" label="负责人" width="100"></el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
+        <!-- <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column> -->
         <el-table-column prop="update_time" label="更新时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="scope">

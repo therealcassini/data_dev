@@ -37,7 +37,7 @@
         </el-row>
       </el-form>
       <el-table :data="tables" v-loading="loading" style="width: 100%" border>
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+        <!-- <el-table-column prop="id" label="ID" width="80"></el-table-column> -->
         <el-table-column prop="db_tbl" label="数据库.表名"></el-table-column>
         <el-table-column prop="db" label="数据库"></el-table-column>
         <el-table-column prop="tbl" label="表名"></el-table-column>
@@ -52,7 +52,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
+        <!-- <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column> -->
         <el-table-column prop="update_time" label="更新时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="scope">

@@ -8,24 +8,35 @@
         </div>
       </template>
 
-      <el-table :data="users" v-loading="loading" style="width: 100%" border>
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
-        <el-table-column prop="name" label="姓名"></el-table-column>
-        <el-table-column label="操作" width="150">
-          <template #default="scope">
-            <el-popconfirm
-              title="确定删除此用户吗?"
-              confirm-button-text="是"
-              cancel-button-text="否"
-              @confirm="deleteUser(scope.row.id)"
-            >
-              <template #reference>
-                <el-button type="danger" :icon="Delete">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div v-loading="loading" class="user-cards-container">
+        <el-row :gutter="20">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="user in users" :key="user.id">
+            <el-card class="user-card">
+              <div class="user-card-header">
+                <div class="user-name">{{ user.name }}</div>
+                <el-popconfirm
+                  title="确定删除此用户吗?"
+                  confirm-button-text="是"
+                  cancel-button-text="否"
+                  @confirm="deleteUser(user.id)"
+                >
+                  <template #reference>
+                    <div class="delete-icon">
+                      <Delete size="18" />
+                    </div>
+                  </template>
+                </el-popconfirm>
+              </div>
+              <div class="user-info">
+                <!-- <div class="user-id">ID: {{ user.id }}</div> -->
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <div v-if="users.length === 0 && !loading" class="no-data">
+          暂无用户数据
+        </div>
+      </div>
     </el-card>
 
     <el-dialog
@@ -153,11 +164,72 @@ onMounted(() => {
   align-items: center;
 }
 
-.el-table {
-  margin-top: 20px;
+.user-cards-container {
+    margin-top: 30px;
+    padding: 10px;
+  }
+
+.user-card {
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s;
+  margin-bottom: 20px;
+}
+
+.user-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.delete-icon {
+  color: #f56c6c;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.delete-icon:hover {
+  color: #ff4d4f;
+  transform: scale(1.1);
+}
+
+.user-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.user-info {
+  padding: 10px 0;
+}
+
+.user-id {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.user-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 30px 0;
+  color: #999;
 }
 
 .dialog-footer button:first-child {
   margin-right: 10px;
 }
-</style> 
+</style>

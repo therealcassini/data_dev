@@ -49,7 +49,7 @@
         </el-row>
       </el-form>
       <el-table :data="apis" v-loading="loading" style="width: 100%" border>
-        <el-table-column prop="id" label="ID" width="60"></el-table-column>
+        <!-- <el-table-column prop="id" label="ID" width="60"></el-table-column> -->
         <el-table-column prop="module" label="模块">
           <template #default="scope">
             <div class="copyable" @click="copyToClipboard(scope.row.module)">
@@ -115,7 +115,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
+        <!-- <el-table-column prop="create_time" label="创建时间" width="160" :formatter="dateTimeFormatter"></el-table-column> -->
         <el-table-column prop="update_time" label="更新时间" width="160" :formatter="dateTimeFormatter"></el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="scope">

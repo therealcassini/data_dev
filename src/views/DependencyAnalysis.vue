@@ -24,7 +24,7 @@
             <p>请输入表名并点击分析按钮</p>
           </div>
           <div v-else>
-            <div id="dependencyChart" style="width: 100%; height: 500px;"></div>
+            <div id="dependencyChart" class="chart-container"></div>
           </div>
         </div>
       </el-card>
@@ -49,7 +49,7 @@
         </div>
         <div v-else>
           <div class="all-dependencies-graph">
-            <div id="allDependenciesChart" style="width: 90vh; height: 90vh;"></div>
+            <div id="allDependenciesChart" class="all-dependencies-chart-container"></div>
           </div>
         </div>
       </div>
@@ -372,9 +372,9 @@ function renderAllDependenciesChart() {
               type: 'graph',
               layout: 'force',
               force: {
-                repulsion: 1500,
-                edgeLength: 120,
-                gravity: 0.1
+                repulsion: 1000,
+                edgeLength: 100,
+                gravity: 0.2
               },
               roam: true,
               draggable: true,
@@ -537,8 +537,13 @@ function renderChart() {
             links: links,
             symbol: ['circle'],
             symbolSize: function (val) {
-              // 当前表更大
-              return val.id === tableName.value ? 40 : 30;
+              // 确保val不是undefined并且有id属性
+              if (val && val.id) {
+                // 当前表更大
+                return val.id === tableName.value ? 40 : 30;
+              }
+              // 如果val是undefined或者没有id属性，返回默认大小
+              return 30;
             },
             edgeSymbol: ['none', 'arrow'],
             edgeSymbolSize: 10,
@@ -596,10 +601,13 @@ function renderChart() {
 <style scoped>
 .dependency-analysis {
   padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .analysis-content {
   margin-top: 20px;
+  width: 100%;
 }
 
 .card-header {
@@ -612,15 +620,39 @@ function renderChart() {
   margin: 20px 0;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .dependency-graph {
-  min-height: 500px;
+  min-height: 1200px;
+  width: 100%;
   padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
 }
 
 .all-dependencies-graph {
   margin-top: 20px;
   overflow: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chart-container {
+  width: 100%;
+  height: 1200px;
+}
+
+/* 统一两个tab下的图表样式 */
+.all-dependencies-chart-container {
+  width: 100%;
+  height: 1200px;
+  margin: 0 auto;
+}
+
+.all-dependencies-chart-container {
+  width: 90vh;
+  height: 90vh;
+  margin: 0 auto;
 }
 </style>

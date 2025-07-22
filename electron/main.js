@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV === 'development'
 const mysql = require('mysql2/promise')
 
 const dbConfig = {
-    host: '103.56.114.40',
+    host: 'cassini.hk',
     port: 3333,
     database: 'data_dev_hk',
     user: 'root',
@@ -21,13 +21,17 @@ console.log('MySQL connection pool created successfully!');
 
 // Function to get a connection from the pool
 async function getConnection() {
-  try {
-    const connection = await dbPool.getConnection();
-    return connection;
-  } catch (err) {
-    console.error('Failed to get connection from pool:', err);
-    throw err;
-  }
+    for (let i = 0; i < 3; i++) { // 重试 3 次
+        try {
+            const connection = await dbPool.getConnection();
+            await connection.ping(); // 检查连接是否有效
+            return connection;
+        } catch (err) {
+            console.error('获取或 ping 连接失败，正在重试:', err);
+            if (connection) connection.release();
+        }
+    }
+    throw new Error('在 3 次尝试后仍无法获取有效连接');
 }
 
 function createWindow() {
@@ -598,6 +602,9 @@ ipcMain.handle('fetch-tables', async (event, { page = 1, pageSize = 20, tbl, tbl
       // Get total count first
       const [countRows] = await connection.query(countQuery, countParams);
       const total = countRows[0].total;
+
+      //order by update_time desc 
+      query += ' ORDER BY t.update_time DESC';
 
       // Add pagination
       const offset = (page - 1) * pageSize;
