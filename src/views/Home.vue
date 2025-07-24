@@ -40,6 +40,9 @@
           <el-tab-pane label="用户管理" name="users">
             <router-view v-if="activeTab === 'users'" />
           </el-tab-pane>
+          <el-tab-pane label="日志记录" name="team-notes">
+            <router-view v-if="activeTab === 'team-notes'" />
+          </el-tab-pane>
         </el-tabs>
       </el-main>
     </el-container>
@@ -62,7 +65,7 @@ export default {
   created() {
     // 根据当前路由设置活动标签
     const path = this.$route.path.split('/').pop()
-    if (path && ['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor', 'dependency-analysis'].includes(path)) {
+    if (path && ['index', 'users', 'scripts', 'tables', 'apis', 'sql-analysis', 'table-metadata', 'test-editor', 'dependency-analysis', 'team-notes'].includes(path)) {
       this.activeTab = path
     } else {
       this.activeTab = 'index'

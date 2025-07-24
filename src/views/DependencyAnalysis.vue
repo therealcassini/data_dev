@@ -2,65 +2,50 @@
   <div class="dependency-analysis">
     <el-tabs v-model="activeTab" type="card">
       <el-tab-pane label="表依赖关系分析">
-        <div class="analysis-content">
-          <el-card class="box-card">
-        <template #header>
-          <div class="card-header">
-            <span>表依赖关系分析</span>
+        <el-card class="box-card">
+          <div class="input-container">
+            <el-input
+              v-model="tableName"
+              placeholder="请输入表名"
+              style="width: 300px; margin-right: 10px;"
+            />
+            <el-button type="primary" @click="analyzeDependencies">分析依赖</el-button>
+            <el-button type="primary" @click="analyzeDependent">分析被依赖</el-button>
           </div>
-        </template>
-        <div class="input-container">
-          <el-input
-            v-model="tableName"
-            placeholder="请输入表名"
-            style="width: 300px; margin-right: 10px;"
-          />
-          <el-button type="primary" @click="analyzeDependencies">分析依赖</el-button>
-          <el-button type="primary" @click="analyzeDependent">分析被依赖</el-button>
-        </div>
-        <div class="dependency-graph">
-          <!-- 这里将添加依赖关系图表 -->
-          <div v-if="dependencies.length === 0 && dependents.length === 0">
-            <p>请输入表名并点击分析按钮</p>
+          <div class="dependency-graph">
+            <!-- 这里将添加依赖关系图表 -->
+            <div v-if="dependencies.length === 0 && dependents.length === 0">
+              <p>请输入表名并点击分析按钮</p>
+            </div>
+            <div v-else>
+              <div id="dependencyChart" class="chart-container"></div>
+            </div>
+          </div>
+        </el-card>
+      </el-tab-pane>
+      <el-tab-pane label="全部依赖查看">
+        <el-card class="box-card">
+          <div v-if="allDependencies.loading">
+            <p>加载中...</p>
+          </div>
+          <div v-else-if="allDependencies.error">
+            <p>加载失败: {{ allDependencies.error }}</p>
+          </div>
+          <div v-else-if="allDependencies.data.length === 0">
+            <p>没有找到依赖数据</p>
           </div>
           <div v-else>
-            <div id="dependencyChart" class="chart-container"></div>
-          </div>
-        </div>
-      </el-card>
-    </div>
-  </el-tab-pane>
-  <el-tab-pane label="全部依赖查看">
-    <el-card class="box-card">
-      <template #header>
-        <div class="card-header">
-          <span>全部依赖数据</span>
-        </div>
-      </template>
-      <div class="all-dependencies-container">
-        <div v-if="allDependencies.loading">
-          <p>加载中...</p>
-        </div>
-        <div v-else-if="allDependencies.error">
-          <p>加载失败: {{ allDependencies.error }}</p>
-        </div>
-        <div v-else-if="allDependencies.data.length === 0">
-          <p>没有找到依赖数据</p>
-        </div>
-        <div v-else>
-          <div class="all-dependencies-graph">
             <div id="allDependenciesChart" class="all-dependencies-chart-container"></div>
           </div>
-        </div>
-      </div>
-    </el-card>
-  </el-tab-pane>
-</el-tabs>
-</div>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 // 仅在Electron环境中导入ipcRenderer
 let ipcRenderer
 if (window.require) {
@@ -108,9 +93,9 @@ onUnmounted(() => {
 // 分析依赖
 function analyzeDependencies() {
   if (!tableName.value.trim()) {
-    alert('请输入表名')
-    return
-  }
+      ElMessage.warning('请输入表名')
+      return
+    }
 
   // 清空之前的结果
   dependencies.value = { nodes: [], links: [] }
@@ -119,7 +104,7 @@ function analyzeDependencies() {
   // 检查ipcRenderer是否存在
   if (!ipcRenderer) {
     console.error('ipcRenderer is not initialized')
-    alert('无法连接到主进程，请确保在Electron环境中运行')
+    ElMessage.error('无法连接到主进程，请确保在Electron环境中运行')
     return
   }
 
@@ -133,11 +118,11 @@ function analyzeDependencies() {
       // 渲染图表
       renderChart()
     } else {
-      alert('分析失败: ' + result.message)
+      ElMessage.error('分析失败: ' + result.message)
     }
   }).catch(error => {
     console.error('分析依赖失败:', error)
-    alert('分析依赖失败')
+    ElMessage.error('分析依赖失败')
   })
 }
 
@@ -169,11 +154,11 @@ function analyzeDependent() {
       // 渲染图表
       renderChart()
     } else {
-      alert('分析失败: ' + result.message)
+      ElMessage.error('分析失败: ' + result.message)
     }
   }).catch(error => {
     console.error('分析被依赖失败:', error)
-    alert('分析被依赖失败')
+    ElMessage.error('分析被依赖失败')
   })
 }
 
@@ -231,11 +216,9 @@ function copyToClipboard(text) {
   if (navigator.clipboard && window.isSecureContext) {
     // 现代浏览器安全上下文
     navigator.clipboard.writeText(text).then(() => {
-      console.log('节点名称已复制到剪贴板:', text);
-      // 显示复制成功的提示
-      alert('节点名称 "' + text + '" 已复制到剪贴板');
+      // 复制成功，不显示提示
     }).catch(err => {
-      console.error('复制失败:', err);
+      // 复制失败，不显示提示
     });
   } else {
     // 回退方案
@@ -250,10 +233,9 @@ function copyToClipboard(text) {
     textArea.select();
     try {
       document.execCommand('copy');
-      console.log('节点名称已复制到剪贴板:', text);
-      alert('节点名称 "' + text + '" 已复制到剪贴板');
+      // 复制成功，不显示提示
     } catch (err) {
-      console.error('复制失败:', err);
+      // 复制失败，不显示提示
     }
     document.body.removeChild(textArea);
   }
@@ -416,11 +398,7 @@ function renderAllDependenciesChart() {
                   fontWeight: 'bold'
                 }
               },
-              // 注册点击事件
-              onClick: function(params) {
-                // 复制节点名称到剪贴板
-                copyToClipboard(params.data.name);
-              }
+              // 移除内联onClick事件配置
             }
           ]
         };
@@ -428,6 +406,13 @@ function renderAllDependenciesChart() {
         // 设置图表选项
         chart.setOption(option);
         console.log('全部依赖图表选项设置完成');
+
+        // 添加点击事件监听器
+        chart.on('click', function(params) {
+          if (params && params.data && params.data.name) {
+            copyToClipboard(params.data.name);
+          }
+        });
 
         // 强制刷新图表
         chart.resize();
@@ -437,12 +422,9 @@ function renderAllDependenciesChart() {
           chart.resize();
         });
 
-        // 在组件卸载时销毁图表
-        onUnmounted(() => {
-          if (chart) {
-            chart.dispose();
-          }
-        });
+        // 图表会在组件顶层的onUnmounted中统一销毁
+        // 不需要在这里再次注册onUnmounted
+        console.log('全部依赖图表渲染完成');
       } catch (error) {
         console.error('渲染全部依赖图表失败:', error);
       }
@@ -579,7 +561,13 @@ function renderChart() {
             // 注册点击事件
             onClick: function(params) {
               // 复制节点名称到剪贴板
-              copyToClipboard(params.data.name);
+              console.log('图表节点被点击:', params);
+              if (params && params.data && params.data.name) {
+                console.log('图表节点名称:', params.data.name);
+                copyToClipboard(params.data.name);
+              } else {
+                console.error('无效的图表节点参数:', params);
+              }
             }
           }
         ]
@@ -588,6 +576,13 @@ function renderChart() {
       // 设置图表选项
       chart.setOption(option);
       console.log('图表选项设置完成');
+
+      // 添加点击事件监听器
+      chart.on('click', function(params) {
+        if (params && params.data && params.data.name) {
+          copyToClipboard(params.data.name);
+        }
+      });
 
       // 强制刷新图表
       chart.resize();
@@ -624,7 +619,7 @@ function renderChart() {
 }
 
 .dependency-graph {
-  min-height: 1200px;
+  min-height: 1000px;
   width: 100%;
   padding: 20px;
   box-sizing: border-box;
@@ -640,19 +635,22 @@ function renderChart() {
 
 .chart-container {
   width: 100%;
-  height: 1200px;
+  height: 1000px;
+  background-color: #f5f5f5;
 }
 
 /* 统一两个tab下的图表样式 */
 .all-dependencies-chart-container {
   width: 100%;
-  height: 1200px;
+  height: 1000px;
   margin: 0 auto;
+  background-color: #f5f5f5;
 }
 
+/* 统一两个tab下的图表样式 */
 .all-dependencies-chart-container {
-  width: 90vh;
-  height: 90vh;
+  width: 100%;
+  height: 1000px;
   margin: 0 auto;
 }
 </style>

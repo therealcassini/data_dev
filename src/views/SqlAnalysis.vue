@@ -5,6 +5,11 @@
         <span>SQL血缘分析</span>
       </div>
       <div class="codemirror-container">
+        <el-form-item label="脚本名称" prop="sql_name" style="margin-bottom: 15px;">
+          <el-select v-model="sqlName" filterable remote reserve-keyword placeholder="请选择脚本名称" :remote-method="fetchSqlNames" style="width: 100%;" @change="onSqlNameChange">
+            <el-option v-for="item in sqlNames" :key="item" :label="item" :value="item"></el-option>
+          </el-select>
+        </el-form-item>
         <el-input
           v-model="sqlInput"
           type="textarea"
@@ -33,15 +38,55 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Parser } from 'node-sql-parser';
 import { Search } from '@element-plus/icons-vue';
 
+// 获取 ipcRenderer 实例
+const ipcRenderer = window.require ? window.require('electron').ipcRenderer : null;
+
 const sqlInput = ref('');
+const sqlName = ref('');
+const sqlNames = ref([]);
 const analysisResult = ref('');
 const errorMessage = ref('');
 const isLoading = ref(false);
 const parser = new Parser();
+
+// 初始化时获取脚本名称列表
+onMounted(() => {
+  fetchSqlNames('');
+});
+
+// 获取脚本名称列表
+function fetchSqlNames(query) {
+  if (!ipcRenderer) return
+  try {
+    ipcRenderer.invoke('fetch-sql-names', query)
+      .then(result => {
+        if (result.success) {
+          sqlNames.value = result.data
+        }
+      })
+  } catch (e) {}
+}
+
+// 当选择脚本名称时触发
+function onSqlNameChange(value) {
+  if (!value || !ipcRenderer) return
+  try {
+    ipcRenderer.invoke('fetch-sql-content-by-name', value)
+      .then(result => {
+        if (result.success) {
+          sqlInput.value = result.content
+        } else {
+          sqlInput.value = ''
+        }
+      })
+  } catch (e) {
+    sqlInput.value = ''
+  }
+}
 
 const analysisResultObj = computed(() => {
   if (!analysisResult.value) return null;
@@ -185,7 +230,7 @@ function analyzeSql() {
 }
 .codemirror-container {
   margin-bottom: 15px;
-  width: 80%;
+  width: 100%;
   text-align: left;
   position: relative;
 }

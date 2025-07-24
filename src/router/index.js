@@ -9,6 +9,7 @@ import Index from '../views/Index.vue'
 import SqlAnalysis from '../views/SqlAnalysis.vue'
 import TableMetadata from '../views/TableMetadata.vue'
 import DependencyAnalysis from '../views/DependencyAnalysis.vue'
+import TeamNotes from '../views/TeamNotes.vue'
 
 const routes = [
   {
@@ -64,6 +65,11 @@ const routes = [
         path: 'table-metadata',
         name: 'table-metadata',
         component: TableMetadata
+      },
+      {
+        path: 'team-notes',
+        name: 'team-notes',
+        component: TeamNotes
       }
     ]
   }

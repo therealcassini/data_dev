@@ -406,6 +406,7 @@ const onEditCreateSqlNameChange = async (val) => {
     const response = await ipcRenderer.invoke('fetch-sql-content-by-name', val)
     if (response.success) {
       editTableForm.create_sql = response.content
+      console.log('Updated create_sql:', editTableForm.create_sql)
     } else {
       editTableForm.create_sql = ''
     }
@@ -419,6 +420,7 @@ const onEditInsertSqlNameChange = async (val) => {
     const response = await ipcRenderer.invoke('fetch-sql-content-by-name', val)
     if (response.success) {
       editTableForm.insert_sql = response.content
+      console.log('Updated insert_sql:', editTableForm.insert_sql)
     } else {
       editTableForm.insert_sql = ''
     }
@@ -431,6 +433,8 @@ const handleEditTable = async () => {
   try {
     const paramsToSend = toRaw(editTableForm)
     paramsToSend.db_tbl = `${paramsToSend.db}.${paramsToSend.tbl}` // 自动计算数据库.表名
+    console.log('Submitting update with create_sql:', paramsToSend.create_sql)
+    console.log('Submitting update with insert_sql:', paramsToSend.insert_sql)
     const response = await ipcRenderer.invoke('update-table', paramsToSend)
     if (response.success) {
       ElMessage.success('编辑表成功！')

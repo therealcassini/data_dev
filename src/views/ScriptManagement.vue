@@ -129,7 +129,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="SQL内容" prop="content" >
-          <el-input v-if="addDialogVisible" v-model="newScriptForm.content" type="textarea" rows="10" placeholder="请输入SQL内容" ref="sqlEditorRef" :spellcheck="false"></el-input>
+          <el-input v-if="addDialogVisible" v-model="newScriptForm.content" type="textarea" rows="30" placeholder="请输入SQL内容" ref="sqlEditorRef" :spellcheck="false"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -171,7 +171,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="SQL内容" prop="content" >
-          <el-input v-model="editScriptForm.content" type="textarea" rows="10" placeholder="请输入SQL内容" style="text-align: left;" :spellcheck="false"></el-input>
+          <el-input v-model="editScriptForm.content" type="textarea" rows="30" placeholder="请输入SQL内容" style="text-align: left;" :spellcheck="false"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -191,15 +191,13 @@
       close-on-click-modal
       :show-close="false"
     >
-      <el-input
+      <div
         v-if="sqlPreviewDialogVisible"
-        v-model="sqlPreviewContent"
-        type="textarea"
-        rows="10"
-        ref="sqlPreviewEditorRef"
-        readonly
-        :spellcheck="false"
-      />
+        class="sql-preview-content"
+        @click="copyPreviewContent"
+      >
+        <p>{{ sqlPreviewContent }}</p>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -527,6 +525,33 @@ const sqlPreviewContent = ref('')
 const sqlPreviewTitle = ref('SQL内容预览')
 const sqlPreviewEditorRef = ref(null)
 
+// 复制预览内容到剪贴板
+const copyPreviewContent = () => {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(sqlPreviewContent.value).then(() => {
+      ElMessage.success('内容已复制到剪贴板');
+    }).catch(err => {
+      ElMessage.error('复制失败: ' + err.message);
+    });
+  } else {
+    const textArea = document.createElement('textarea');
+    textArea.value = sqlPreviewContent.value;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      ElMessage.success('内容已复制到剪贴板');
+    } catch (err) {
+      ElMessage.error('复制失败: ' + err.message);
+    }
+    document.body.removeChild(textArea);
+  }
+}
+
 async function showSqlPreviewDialog(row) {
   let content = row.content;
   // 如果 content 为空，尝试通过 id 拉取详情
@@ -581,6 +606,24 @@ watch(
   border: 1px solid #ebeef5;
   border-radius: 4px;
   background-color: #ffffff;
+}
+
+.sql-preview-content {
+  padding: 16px;
+  background-color: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  max-height: 1000px;
+  overflow-y: auto;
+  cursor: pointer;
+}
+
+.sql-preview-content p {
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+  font-family: monospace;
+  text-align: left;
 }
 
 .pagination-container {
